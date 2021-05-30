@@ -28,23 +28,20 @@ type AnlageContainer struct {
 
 func NewVorlage(app *application.AppContext, ris *downloader.RisRessource) *AnlageContainer {
 
-	return &AnlageContainer{
-		app:          app,
-		webRessource: ris,
-		file:         files.NewFile(app, ris),
-	}
+	return NewAnlageContainer(app,ris)
 }
 
 func NewSitzung(app *application.AppContext, ris *downloader.RisRessource) *AnlageContainer {
 
-	return &AnlageContainer{
-		app:          app,
-		webRessource: ris,
-		file:         files.NewFile(app, ris),
-	}
+	return NewAnlageContainer(app,ris)
 }
 
 func NewTop(app *application.AppContext, ris *downloader.RisRessource) *AnlageContainer {
+
+	return NewAnlageContainer(app,ris)
+}
+
+func NewAnlageContainer(app *application.AppContext, ris *downloader.RisRessource) *AnlageContainer {
 
 	return &AnlageContainer{
 		app:          app,

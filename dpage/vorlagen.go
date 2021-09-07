@@ -1,17 +1,16 @@
 package dpage
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/PuerkitoBio/goquery"
+	"github.com/pkg/errors"
 	"github.com/rismaster/allris-common/application"
 	"github.com/rismaster/allris-common/common"
 	"github.com/rismaster/allris-common/common/domtools"
 	"github.com/rismaster/allris-common/common/files"
 	"github.com/rismaster/allris-common/common/slog"
-	"github.com/rismaster/allris-common/config"
 	"github.com/rismaster/allris-common/downloader"
-	"bytes"
-	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/pkg/errors"
 	"net/url"
 	"time"
 )
@@ -43,8 +42,8 @@ func (vl *Vorlagenliste) SynchronizeSince(minTime time.Time) error {
 		allVorlagenFromRis[vf.GetPath()] = true
 	}
 
-	childFolders := []string{config.AnlagenFolder, config.TopFolder}
-	err = files.DeleteFilesIfNotInAndAfter(vl.app, config.VorlagenFolder, allVorlagenFromRis, childFolders, minTime)
+	childFolders := []string{vl.app.Config.GetAnlagenFolder(), vl.app.Config.GetTopFolder()}
+	err = files.DeleteFilesIfNotInAndAfter(vl.app, vl.app.Config.GetVorlagenFolder(), allVorlagenFromRis, childFolders, minTime)
 	if err != nil {
 		return errors.Wrap(err, "error deleting vorlagen")
 	}
@@ -53,11 +52,11 @@ func (vl *Vorlagenliste) SynchronizeSince(minTime time.Time) error {
 
 func (vl *Vorlagenliste) downloadFromMin(minTime time.Time) (results []downloader.RisRessource, err error) {
 
-	var url = config.UrlVorlagenliste
+	var url = vl.app.Config.GetUrlVorlagenliste()
 	for i := 0; i < 1000; i++ {
 
 		if i == 1 {
-			url = config.UrlVorlagenliste + "?shownext=true"
+			url = vl.app.Config.GetUrlVorlagenliste() + "?shownext=true"
 		}
 
 		limitTimeReached, vorlagen, err := vl.fetch(url, i, minTime, true)
@@ -81,12 +80,12 @@ func (vl *Vorlagenliste) downloadFromMin(minTime time.Time) (results []downloade
 
 func (vl *Vorlagenliste) fetch(ressourceUrl string, page int, risCreatedSince time.Time, redownload bool) (limitTimeReached bool, vorlagen []downloader.RisRessource, err error) {
 
-	uri, err := url.Parse(config.TargetToParse + ressourceUrl)
+	uri, err := url.Parse(vl.app.Config.GetTargetToParse() + ressourceUrl)
 	if err != nil {
 		return false, nil, errors.Wrap(err, "cannot parse url")
 	}
 
-	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", config.VorlagenListeType, page), ".html", time.Now(), uri, &url.Values{})
+	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", vl.app.Config.GetVorlagenListeType(), page), ".html", time.Now(), uri, &url.Values{})
 	targetStore := files.NewFile(vl.app, srcWeb)
 
 	err = targetStore.Fetch(files.HttpGet, srcWeb, "text/html", true)
@@ -142,20 +141,20 @@ func (vl *Vorlagenliste) parseElement(e *goquery.Selection) (vorlage *downloader
 	volfdnr := domtools.ExtractIntFromInput(dom, "VOLFDNR")
 	dateText := domtools.GetChildTextFromNode(dom.Get(3))
 
-	location, err := time.LoadLocation(config.Timezone)
+	location, err := time.LoadLocation(vl.app.Config.GetTimezone())
 	if err != nil {
 		return nil, err
 	}
 
-	risCreatedSince, err := time.ParseInLocation(config.DateFormat, dateText, location)
+	risCreatedSince, err := time.ParseInLocation(vl.app.Config.GetDateFormat(), dateText, location)
 	if err != nil {
 		return nil, errors.New("false html format no created date of Vorgangsliste")
 	}
 
-	uri, err := url.Parse(config.TargetToParse + fmt.Sprintf(config.UrlVorlageTmpl, volfdnr))
+	uri, err := url.Parse(vl.app.Config.GetTargetToParse() + fmt.Sprintf(vl.app.Config.GetUrlVorlageTmpl(), volfdnr))
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse url")
 	}
 
-	return downloader.NewRisRessource(config.VorlagenFolder, fmt.Sprintf("%s-%d", config.VorlageType, volfdnr), ".html", risCreatedSince, uri, &url.Values{}), nil
+	return downloader.NewRisRessource(vl.app.Config.GetVorlagenFolder(), fmt.Sprintf("%s-%d", vl.app.Config.GetVorlageType(), volfdnr), ".html", risCreatedSince, uri, &url.Values{}), nil
 }

@@ -1,16 +1,15 @@
 package dpage
 
 import (
-	"github.com/rismaster/allris-common/application"
-	"github.com/rismaster/allris-common/common"
-	"github.com/rismaster/allris-common/common/files"
-	"github.com/rismaster/allris-common/common/slog"
-	"github.com/rismaster/allris-common/config"
-	"github.com/rismaster/allris-common/downloader"
 	"bytes"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pkg/errors"
+	"github.com/rismaster/allris-common/application"
+	"github.com/rismaster/allris-common/common"
+	"github.com/rismaster/allris-common/common/files"
+	"github.com/rismaster/allris-common/common/slog"
+	"github.com/rismaster/allris-common/downloader"
 	"log"
 	"net/url"
 	"strconv"
@@ -50,8 +49,8 @@ func (sl *Sitzungsliste) SynchronizeSince(minTime time.Time) error {
 		return err
 	}
 
-	childFolders := []string{config.AnlagenFolder, config.TopFolder}
-	err = files.DeleteFilesIfNotInAndAfter(sl.app, config.SitzungenFolder, allSitzungenFromRis, childFolders, minTime)
+	childFolders := []string{sl.app.Config.GetAnlagenFolder(), sl.app.Config.GetTopFolder()}
+	err = files.DeleteFilesIfNotInAndAfter(sl.app, sl.app.Config.GetSitzungenFolder(), allSitzungenFromRis, childFolders, minTime)
 	if err != nil {
 		return errors.Wrap(err, "error deleting vorlagen")
 	}
@@ -106,17 +105,17 @@ func (sl *Sitzungsliste) fetchLongSitzungsListe(minTime time.Time) (sitzungen []
 	formData.Add("GRA", "99999999")
 	formData.Add("filtGRA", "filter")
 
-	uri, err := url.Parse(config.TargetToParse + config.UrlSitzungsLangeliste)
+	uri, err := url.Parse(sl.app.Config.GetTargetToParse() + sl.app.Config.GetUrlSitzungsLangeliste())
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse url")
 	}
 
-	srcWeb := downloader.NewRisRessource("", config.AlleSitzungenType, ".html", time.Now(), uri, &formData)
+	srcWeb := downloader.NewRisRessource("", sl.app.Config.GetAlleSitzungenType(), ".html", time.Now(), uri, &formData)
 	targetStore := files.NewFile(sl.app, srcWeb)
 
 	err = targetStore.Fetch(files.HttpPost, srcWeb, "text/html", true)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("error downloading allesitzungen from %s", config.UrlSitzungsLangeliste))
+		return nil, errors.Wrap(err, fmt.Sprintf("error downloading allesitzungen from %s", sl.app.Config.GetUrlSitzungsLangeliste()))
 	}
 
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(targetStore.GetContent()))
@@ -157,17 +156,17 @@ func (sl *Sitzungsliste) fetchSitzungsListe(gremium *Gremium) (err error) {
 	formData.Add("GRA", graStr)
 	formData.Add("filtGRA", "filter")
 
-	uri, err := url.Parse(config.TargetToParse + config.UrlSitzungsliste)
+	uri, err := url.Parse(sl.app.Config.GetTargetToParse() + sl.app.Config.GetUrlSitzungsliste())
 	if err != nil {
 		return errors.Wrap(err, "cannot parse url")
 	}
 
-	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", config.GremienListeType, gremium.option), ".html", time.Now(), uri, &formData)
+	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", sl.app.Config.GetGremienListeType(), gremium.option), ".html", time.Now(), uri, &formData)
 	targetStore := files.NewFile(sl.app, srcWeb)
 
 	err = targetStore.Fetch(files.HttpPost, srcWeb, "text/html", true)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("error downloading Sitzungsliste from %s", config.UrlSitzungsliste))
+		return errors.Wrap(err, fmt.Sprintf("error downloading Sitzungsliste from %s", sl.app.Config.GetUrlSitzungsliste()))
 	}
 
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(targetStore.GetContent()))
@@ -216,8 +215,8 @@ func (sl *Sitzungsliste) parseElement(e *goquery.Selection) (*downloader.RisRess
 	timeTr := strings.Split(strings.TrimSpace(e.Find(":nth-child(7)").Text()), " - ")[0]
 	dateTimetxt := fmt.Sprintf("%s %s:00", dateText, timeTr)
 
-	localTz, _ := time.LoadLocation(config.Timezone)
-	risTime, err := time.ParseInLocation(config.DateFormatWithTime, dateTimetxt, localTz)
+	localTz, _ := time.LoadLocation(sl.app.Config.GetTimezone())
+	risTime, err := time.ParseInLocation(sl.app.Config.GetDateFormatWithTime(), dateTimetxt, localTz)
 	if err != nil {
 		return nil, err
 	}
@@ -230,14 +229,14 @@ func (sl *Sitzungsliste) parseElement(e *goquery.Selection) (*downloader.RisRess
 			return nil, errors.Wrap(err1, "cannot create int from silfdnr")
 		}
 
-		uri, err2 := url.Parse(config.TargetToParse + fmt.Sprintf(config.UrlSitzungTmpl, silfdnrInt))
+		uri, err2 := url.Parse(sl.app.Config.GetTargetToParse() + fmt.Sprintf(sl.app.Config.GetUrlSitzungTmpl(), silfdnrInt))
 		if err2 != nil {
 			return nil, errors.Wrap(err2, "cannot parse url")
 		}
 
-		sName := fmt.Sprintf("%s-%d", config.SitzungType, silfdnrInt)
+		sName := fmt.Sprintf("%s-%d", sl.app.Config.GetSitzungType(), silfdnrInt)
 
-		return downloader.NewRisRessource(config.SitzungenFolder, sName, ".html", risTime, uri, &url.Values{}), nil
+		return downloader.NewRisRessource(sl.app.Config.GetSitzungenFolder(), sName, ".html", risTime, uri, &url.Values{}), nil
 		//return NewSitzung(sl.app, res), nil
 	} else if dateText != "" {
 		sName2 := e.Find(":nth-child(2)").Text()
@@ -256,18 +255,18 @@ func (sl *Sitzungsliste) parseElement(e *goquery.Selection) (*downloader.RisRess
 
 func (sl *Sitzungsliste) fetchGremiumOptions() (gremien []*Gremium, err error) {
 
-	uri, err := url.Parse(config.TargetToParse + config.UrlSitzungsliste)
+	uri, err := url.Parse(sl.app.Config.GetTargetToParse() + sl.app.Config.GetUrlSitzungsliste())
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse url")
 	}
 
-	srcWeb := downloader.NewRisRessource("", config.GremienOptionsType, ".html", time.Now(), uri, &url.Values{})
+	srcWeb := downloader.NewRisRessource("", sl.app.Config.GetGremienOptionsType(), ".html", time.Now(), uri, &url.Values{})
 
 	targetStore := files.NewFile(sl.app, srcWeb)
 
 	err = targetStore.Fetch(files.HttpGet, srcWeb, "text/html", true)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("error downloading Gremienliste from %s", config.UrlSitzungsliste))
+		return nil, errors.Wrap(err, fmt.Sprintf("error downloading Gremienliste from %s", sl.app.Config.GetUrlSitzungsliste()))
 	}
 
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(targetStore.GetContent()))

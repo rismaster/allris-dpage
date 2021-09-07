@@ -1,13 +1,12 @@
 package dpage
 
 import (
-	"github.com/rismaster/allris-common/application"
-	"github.com/rismaster/allris-common/common/slog"
-	"github.com/rismaster/allris-common/config"
-	"github.com/rismaster/allris-common/downloader"
 	"cloud.google.com/go/pubsub"
 	"context"
 	"encoding/json"
+	"github.com/rismaster/allris-common/application"
+	"github.com/rismaster/allris-common/common/slog"
+	"github.com/rismaster/allris-common/downloader"
 )
 
 func Download(ctx context.Context, ris downloader.RisRessource) {
@@ -19,18 +18,20 @@ func Download(ctx context.Context, ris downloader.RisRessource) {
 
 	var doc Document
 
+	conf := app.Config
+
 	switch ris.Folder {
-	case config.SitzungenFolder:
+	case conf.GetSitzungenFolder():
 		doc = NewSitzung(app, &ris)
-	case config.TopFolder:
+	case conf.GetTopFolder():
 		doc = NewTop(app, &ris)
-	case config.AnlagenFolder:
+	case conf.GetAnlagenFolder():
 		if ris.GetFormData().Get("options") != "" {
 			doc = NewAnlageDocument(app, &ris)
 		} else {
 			doc = NewAnlage(app, &ris)
 		}
-	case config.VorlagenFolder:
+	case conf.GetVorlagenFolder():
 		doc = NewVorlage(app, &ris)
 	}
 
@@ -46,7 +47,7 @@ func Download(ctx context.Context, ris downloader.RisRessource) {
 
 func PublishRisDownload(app *application.AppContext, risArr []downloader.RisRessource) error {
 
-	if config.Debug {
+	if app.Config.GetDebug() {
 
 		for _, ris := range risArr {
 			Download(app.Ctx(), ris)
@@ -54,7 +55,7 @@ func PublishRisDownload(app *application.AppContext, risArr []downloader.RisRess
 
 	} else {
 
-		t := app.Publisher().Topic(config.DownloadTopic)
+		t := app.Publisher().Topic(app.Config.GetDownloadTopic())
 		for _, ris := range risArr {
 			b, err := json.Marshal(ris)
 			if err != nil {

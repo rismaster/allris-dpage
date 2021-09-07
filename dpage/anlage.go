@@ -1,12 +1,12 @@
 package dpage
 
 import (
+	"fmt"
+	"github.com/pkg/errors"
 	"github.com/rismaster/allris-common/application"
 	"github.com/rismaster/allris-common/common"
 	"github.com/rismaster/allris-common/common/files"
 	"github.com/rismaster/allris-common/downloader"
-	"fmt"
-	"github.com/pkg/errors"
 )
 
 type Anlage struct {

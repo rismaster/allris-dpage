@@ -1,17 +1,16 @@
 package dpage
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/PuerkitoBio/goquery"
+	"github.com/pkg/errors"
 	"github.com/rismaster/allris-common/application"
 	"github.com/rismaster/allris-common/common"
 	"github.com/rismaster/allris-common/common/domtools"
 	"github.com/rismaster/allris-common/common/files"
 	"github.com/rismaster/allris-common/common/slog"
-	"github.com/rismaster/allris-common/config"
 	"github.com/rismaster/allris-common/downloader"
-	"bytes"
-	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/pkg/errors"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -28,17 +27,17 @@ type AnlageContainer struct {
 
 func NewVorlage(app *application.AppContext, ris *downloader.RisRessource) *AnlageContainer {
 
-	return NewAnlageContainer(app,ris)
+	return NewAnlageContainer(app, ris)
 }
 
 func NewSitzung(app *application.AppContext, ris *downloader.RisRessource) *AnlageContainer {
 
-	return NewAnlageContainer(app,ris)
+	return NewAnlageContainer(app, ris)
 }
 
 func NewTop(app *application.AppContext, ris *downloader.RisRessource) *AnlageContainer {
 
-	return NewAnlageContainer(app,ris)
+	return NewAnlageContainer(app, ris)
 }
 
 func NewAnlageContainer(app *application.AppContext, ris *downloader.RisRessource) *AnlageContainer {
@@ -97,7 +96,7 @@ func (a *AnlageContainer) Download() error {
 
 	var tops []*AnlageContainer
 	existingTops := make(map[string]bool)
-	if a.GetFolder() == config.SitzungenFolder {
+	if a.GetFolder() == a.app.Config.GetSitzungenFolder() {
 		tops = a.extractTops(dom)
 		for _, top := range tops {
 			existingTops[top.GetPath()] = true
@@ -106,16 +105,16 @@ func (a *AnlageContainer) Download() error {
 	}
 
 	childFolders := []string{}
-	err = files.DeleteFilesIfNotInAndAfter(a.app, config.AnlagenFolder+a.GetName()+"-anlage-", existingAnlagen, childFolders, time.Time{})
+	err = files.DeleteFilesIfNotInAndAfter(a.app, a.app.Config.GetAnlagenFolder()+a.GetName()+"-anlage-", existingAnlagen, childFolders, time.Time{})
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("error deleting %s", config.AnlagenFolder+a.GetName()))
+		return errors.Wrap(err, fmt.Sprintf("error deleting %s", a.app.Config.GetAnlagenFolder()+a.GetName()))
 	}
 
-	if a.GetFolder() == config.SitzungenFolder {
-		childFolders = []string{config.AnlagenFolder}
-		err = files.DeleteFilesIfNotInAndAfter(a.app, config.TopFolder+a.GetName()+"-top-", existingTops, childFolders, time.Time{})
+	if a.GetFolder() == a.app.Config.GetSitzungenFolder() {
+		childFolders = []string{a.app.Config.GetAnlagenFolder()}
+		err = files.DeleteFilesIfNotInAndAfter(a.app, a.app.Config.GetTopFolder()+a.GetName()+"-top-", existingTops, childFolders, time.Time{})
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("error deleting %s", config.TopFolder+a.GetName()))
+			return errors.Wrap(err, fmt.Sprintf("error deleting %s", a.app.Config.GetTopFolder()+a.GetName()))
 		}
 	}
 
@@ -154,7 +153,7 @@ func (a *AnlageContainer) downloadAndSave() (*goquery.Document, error) {
 
 func (a *AnlageContainer) extractTops(dom *goquery.Document) (tops []*AnlageContainer) {
 
-	if a.GetFolder() != config.SitzungenFolder {
+	if a.GetFolder() != a.app.Config.GetSitzungenFolder() {
 		return tops
 	}
 	topRows := dom.Find("table a")
@@ -173,12 +172,12 @@ func (a *AnlageContainer) extractTops(dom *goquery.Document) (tops []*AnlageCont
 				tolfdnr, errT := strconv.Atoi(matches[1])
 				if errT == nil && tolfdnr > 0 {
 
-					name := fmt.Sprintf("%s-%s-%d", a.webRessource.GetName(), config.TopType, tolfdnr)
+					name := fmt.Sprintf("%s-%s-%d", a.webRessource.GetName(), a.app.Config.GetTopType(), tolfdnr)
 					ending := ".html" //filename contains ending
 					created := a.webRessource.GetCreated()
-					uri, err := url.Parse(config.TargetToParse + fmt.Sprintf("to020.asp?TOLFDNR=%d", tolfdnr))
+					uri, err := url.Parse(a.app.Config.GetTargetToParse() + fmt.Sprintf("to020.asp?TOLFDNR=%d", tolfdnr))
 					if err == nil {
-						doc := downloader.NewRisRessource(config.TopFolder, name, ending, created, uri, &url.Values{})
+						doc := downloader.NewRisRessource(a.app.Config.GetTopFolder(), name, ending, created, uri, &url.Values{})
 						tops = append(tops, NewTop(a.app, doc))
 					}
 				}
@@ -217,12 +216,12 @@ func (a *AnlageContainer) extractAnlagen(dom *goquery.Selection) (docs []downloa
 					size = domtools.CleanText(groups[0][2])
 				}
 
-				name := fmt.Sprintf("%s-%s-%s-%s", a.webRessource.GetName(), config.AnlageType, size, filepath.Base(href))
+				name := fmt.Sprintf("%s-%s-%s-%s", a.webRessource.GetName(), a.app.Config.GetAnlageType(), size, filepath.Base(href))
 				ending := "" //filename contains ending
 				created := a.webRessource.GetCreated()
-				uri, err := url.Parse(config.TargetToParse + href)
+				uri, err := url.Parse(a.app.Config.GetTargetToParse() + href)
 				if err == nil {
-					doc := downloader.NewRisRessource(config.AnlagenFolder, name, ending, created, uri, &url.Values{})
+					doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &url.Values{})
 					docs = append(docs, *doc)
 				}
 			}
@@ -234,7 +233,7 @@ func (a *AnlageContainer) extractAnlagen(dom *goquery.Selection) (docs []downloa
 func (a *AnlageContainer) extractBasisAnlagen(dom *goquery.Selection) (docs []downloader.RisRessource) {
 
 	theTopTable := dom.Find(".me1 > table.tk1").First()
-	selector := "form[action=\"" + config.UrlAnlagedoc + "\"]"
+	selector := "form[action=\"" + a.app.Config.GetUrlAnlagedoc() + "\"]"
 	var form = theTopTable.Find(selector)
 	for ; form.Nodes != nil; form = form.NextFiltered(selector) {
 		dolfdnr := domtools.ExtractIntFromInput(form, "DOLFDNR")
@@ -245,13 +244,13 @@ func (a *AnlageContainer) extractBasisAnlagen(dom *goquery.Selection) (docs []do
 		formData.Add("DOLFDNR", strconv.Itoa(dolfdnr))
 		formData.Add("annots", strconv.Itoa(annots))
 
-		name := fmt.Sprintf("%s-%s-%d-%d", a.webRessource.GetName(), config.AnlageDocumentType, dolfdnr, dolfdnr%100)
+		name := fmt.Sprintf("%s-%s-%d-%d", a.webRessource.GetName(), a.app.Config.GetAnlageDocumentType(), dolfdnr, dolfdnr%100)
 		ending := ".pdf"
 		created := a.webRessource.GetCreated()
-		uri, err := url.Parse(config.TargetToParse + config.UrlAnlagedoc)
+		uri, err := url.Parse(a.app.Config.GetTargetToParse() + a.app.Config.GetUrlAnlagedoc())
 
 		if err == nil {
-			doc := downloader.NewRisRessource(config.AnlagenFolder, name, ending, created, uri, &formData)
+			doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &formData)
 			docs = append(docs, *doc)
 		}
 

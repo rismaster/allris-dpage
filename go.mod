@@ -11,7 +11,7 @@ require (
 	github.com/mailgun/mailgun-go/v4 v4.5.1 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.9 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/rismaster/allris-common v0.0.0-20210907092810-1ccaa524391a // indirect
+	github.com/rismaster/allris-common v0.0.0-20210907094820-06f9bf183f2a // indirect
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420 // indirect
 	google.golang.org/api v0.45.0 // indirect
 	h12.io/socks v1.0.2 // indirect

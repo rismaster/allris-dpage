@@ -4,21 +4,20 @@ import (
 	"cloud.google.com/go/pubsub"
 	"context"
 	"encoding/json"
+	allris_common "github.com/rismaster/allris-common"
 	"github.com/rismaster/allris-common/application"
 	"github.com/rismaster/allris-common/common/slog"
 	"github.com/rismaster/allris-common/downloader"
 )
 
-func Download(ctx context.Context, ris downloader.RisRessource) {
+func Download(ctx context.Context, ris downloader.RisRessource, conf allris_common.Config) {
 
-	app, err := application.NewAppContextWithContext(ctx)
+	app, err := application.NewAppContextWithContext(ctx, conf)
 	if err != nil {
 		slog.Fatal("error init appContext: %+v", err)
 	}
 
 	var doc Document
-
-	conf := app.Config
 
 	switch ris.Folder {
 	case conf.GetSitzungenFolder():
@@ -50,7 +49,7 @@ func PublishRisDownload(app *application.AppContext, risArr []downloader.RisRess
 	if app.Config.GetDebug() {
 
 		for _, ris := range risArr {
-			Download(app.Ctx(), ris)
+			Download(app.Ctx(), ris, app.Config)
 		}
 
 	} else {

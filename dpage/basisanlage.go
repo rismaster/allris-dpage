@@ -1,12 +1,12 @@
 package dpage
 
 import (
+	"fmt"
+	"github.com/pkg/errors"
 	"github.com/rismaster/allris-common/application"
 	"github.com/rismaster/allris-common/common"
 	"github.com/rismaster/allris-common/common/files"
 	"github.com/rismaster/allris-common/downloader"
-	"fmt"
-	"github.com/pkg/errors"
 )
 
 type AnlageDocument struct {
@@ -32,9 +32,9 @@ func (d *AnlageDocument) GetUrl() string {
 	return d.webRessource.GetUrl()
 }
 
-func (d *AnlageDocument) Download() error {
+func (d *AnlageDocument) Download(redownload bool) error {
 
-	err := d.file.Fetch(files.HttpPost, d.webRessource, "application/pdf", true)
+	err := d.file.Fetch(files.HttpPost, d.webRessource, "application/pdf", redownload)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error downloading Vorlagenliste from %s, Error: %+v", d.webRessource.GetUrl(), err))
 	}

@@ -25,13 +25,13 @@ func NewVorlagenliste(app *application.AppContext) Vorlagenliste {
 	}
 }
 
-func (vl *Vorlagenliste) SynchronizeSince(minTime time.Time) error {
+func (vl *Vorlagenliste) SynchronizeSince(minTime time.Time, redownload bool) error {
 	vorlagen, err := vl.downloadFromMin(minTime)
 	if err != nil {
 		return errors.Wrap(err, "error downloading vorlagen")
 	}
 
-	err = PublishRisDownload(vl.app, vorlagen)
+	err = PublishRisDownload(vl.app, vorlagen, redownload)
 	if err != nil {
 		return err
 	}

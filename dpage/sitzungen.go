@@ -32,7 +32,7 @@ func NewSitzungsliste(app *application.AppContext) Sitzungsliste {
 	}
 }
 
-func (sl *Sitzungsliste) SynchronizeSince(minTime time.Time) error {
+func (sl *Sitzungsliste) SynchronizeSince(minTime time.Time, redownload bool) error {
 	sitzungenRis, err := sl.fetchLongSitzungsListe(minTime)
 	if err != nil {
 		return errors.Wrap(err, "error fetching long sitzungsliste")
@@ -44,7 +44,7 @@ func (sl *Sitzungsliste) SynchronizeSince(minTime time.Time) error {
 		allSitzungenFromRis[sitzung.GetPath()] = true
 	}
 
-	err = PublishRisDownload(sl.app, sitzungenRis)
+	err = PublishRisDownload(sl.app, sitzungenRis, redownload)
 	if err != nil {
 		return err
 	}
@@ -57,13 +57,13 @@ func (sl *Sitzungsliste) SynchronizeSince(minTime time.Time) error {
 	return nil
 }
 
-func (sl *Sitzungsliste) DownloadLastNPerGremium(countPerGremium int) error {
+func (sl *Sitzungsliste) DownloadLastNPerGremium(countPerGremium int, redownload bool) error {
 	sitzungenRis, err := sl.downloadMax(countPerGremium)
 	if err != nil {
 		return errors.Wrap(err, "error downloading vorlagen %+v")
 	}
 
-	err = PublishRisDownload(sl.app, sitzungenRis)
+	err = PublishRisDownload(sl.app, sitzungenRis, redownload)
 	if err != nil {
 		return err
 	}

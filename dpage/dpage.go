@@ -10,7 +10,7 @@ import (
 	"github.com/rismaster/allris-common/downloader"
 )
 
-func Download(ctx context.Context, ris downloader.RisRessource, conf allris_common.Config) {
+func Download(ctx context.Context, ris downloader.RisRessource, conf allris_common.Config, redownload bool) {
 
 	app, err := application.NewAppContextWithContext(ctx, conf)
 	if err != nil {
@@ -35,7 +35,7 @@ func Download(ctx context.Context, ris downloader.RisRessource, conf allris_comm
 	}
 
 	if doc != nil {
-		err = doc.Download()
+		err = doc.Download(redownload)
 		if err != nil {
 			slog.Fatal("error downloading %+v: %+v", ris, err)
 		}
@@ -44,12 +44,12 @@ func Download(ctx context.Context, ris downloader.RisRessource, conf allris_comm
 	}
 }
 
-func PublishRisDownload(app *application.AppContext, risArr []downloader.RisRessource) error {
+func PublishRisDownload(app *application.AppContext, risArr []downloader.RisRessource, redownload bool) error {
 
 	if app.Config.GetDebug() {
 
 		for _, ris := range risArr {
-			Download(app.Ctx(), ris, app.Config)
+			Download(app.Ctx(), ris, app.Config, redownload)
 		}
 
 	} else {

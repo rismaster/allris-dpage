@@ -65,9 +65,9 @@ func (a *AnlageContainer) GetUrl() string {
 	return a.webRessource.GetUrl()
 }
 
-func (a *AnlageContainer) Download() error {
+func (a *AnlageContainer) Download(redownload bool) error {
 
-	dom, err := a.downloadAndSave()
+	dom, err := a.downloadAndSave(redownload)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error downloading: %s %+v", a.GetPath()))
 	}
@@ -118,12 +118,12 @@ func (a *AnlageContainer) Download() error {
 		}
 	}
 
-	return PublishRisDownload(a.app, risToDownload)
+	return PublishRisDownload(a.app, risToDownload, redownload)
 }
 
-func (a *AnlageContainer) downloadAndSave() (*goquery.Document, error) {
+func (a *AnlageContainer) downloadAndSave(redownload bool) (*goquery.Document, error) {
 
-	err := a.file.Fetch(files.HttpGet, a.webRessource, "text/html", true)
+	err := a.file.Fetch(files.HttpGet, a.webRessource, "text/html", redownload)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("error downloading file from %s, Error: %+v", a.GetUrl(), err))
 	}

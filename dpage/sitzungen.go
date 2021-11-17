@@ -110,7 +110,7 @@ func (sl *Sitzungsliste) fetchLongSitzungsListe(minTime time.Time, redownload bo
 		return nil, errors.Wrap(err, "cannot parse url")
 	}
 
-	srcWeb := downloader.NewRisRessource("", sl.app.Config.GetAlleSitzungenType(), ".html", time.Now(), uri, &formData, redownload)
+	srcWeb := downloader.NewRisRessource("", sl.app.Config.GetAlleSitzungenType(), ".html", time.Now(), uri, &formData, true, redownload)
 	targetStore := files.NewFile(sl.app, srcWeb)
 
 	err = targetStore.Fetch(files.HttpPost, srcWeb, "text/html")
@@ -128,7 +128,7 @@ func (sl *Sitzungsliste) fetchLongSitzungsListe(minTime time.Time, redownload bo
 
 		if selection.Children().Size() >= 8 {
 
-			sitzung, err := sl.parseElement(selection, redownload)
+			sitzung, err := sl.parseElement(selection, srcWeb)
 			if err != nil {
 				log.Printf("error Parse sitzung element %v", err)
 			}
@@ -161,7 +161,7 @@ func (sl *Sitzungsliste) fetchSitzungsListe(gremium *Gremium, redownload bool) (
 		return errors.Wrap(err, "cannot parse url")
 	}
 
-	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", sl.app.Config.GetGremienListeType(), gremium.option), ".html", time.Now(), uri, &formData, redownload)
+	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", sl.app.Config.GetGremienListeType(), gremium.option), ".html", time.Now(), uri, &formData, true, redownload)
 	targetStore := files.NewFile(sl.app, srcWeb)
 
 	err = targetStore.Fetch(files.HttpPost, srcWeb, "text/html")
@@ -179,7 +179,7 @@ func (sl *Sitzungsliste) fetchSitzungsListe(gremium *Gremium, redownload bool) (
 
 		if selection.Children().Size() >= 8 {
 
-			sitzung, err := sl.parseElement(selection, redownload)
+			sitzung, err := sl.parseElement(selection, srcWeb)
 			if err != nil {
 				log.Printf("error Parse sitzung element %v", err)
 			}
@@ -200,7 +200,7 @@ func (sl *Sitzungsliste) fetchSitzungsListe(gremium *Gremium, redownload bool) (
 	return nil
 }
 
-func (sl *Sitzungsliste) parseElement(e *goquery.Selection, redownload bool) (*downloader.RisRessource, error) {
+func (sl *Sitzungsliste) parseElement(e *goquery.Selection, slRisResource *downloader.RisRessource) (*downloader.RisRessource, error) {
 
 	lnkTr := e.Find(":nth-child(2) a")
 	lnk, _ := lnkTr.Attr("href")
@@ -236,13 +236,13 @@ func (sl *Sitzungsliste) parseElement(e *goquery.Selection, redownload bool) (*d
 
 		sName := fmt.Sprintf("%s-%d", sl.app.Config.GetSitzungType(), silfdnrInt)
 
-		return downloader.NewRisRessource(sl.app.Config.GetSitzungenFolder(), sName, ".html", risTime, uri, &url.Values{}, redownload), nil
+		return downloader.NewRisRessource(sl.app.Config.GetSitzungenFolder(), sName, ".html", risTime, uri, &url.Values{}, slRisResource.RedownloadChildren, slRisResource.RedownloadChildren), nil
 		//return NewSitzung(sl.app, res), nil
 	} else if dateText != "" {
 		sName2 := e.Find(":nth-child(2)").Text()
 		slog.Info("Kalender-Eintrag: :%s %s", dateTimetxt, sName2)
 
-		return downloader.NewRisRessource("", sName2, "", risTime, nil, &url.Values{}, redownload), nil
+		return downloader.NewRisRessource("", sName2, "", risTime, nil, &url.Values{}, slRisResource.RedownloadChildren, slRisResource.RedownloadChildren), nil
 
 		//return NewSitzung(sl.app, res), nil
 	} else {
@@ -260,7 +260,7 @@ func (sl *Sitzungsliste) fetchGremiumOptions(redownload bool) (gremien []*Gremiu
 		return nil, errors.Wrap(err, "cannot parse url")
 	}
 
-	srcWeb := downloader.NewRisRessource("", sl.app.Config.GetGremienOptionsType(), ".html", time.Now(), uri, &url.Values{}, redownload)
+	srcWeb := downloader.NewRisRessource("", sl.app.Config.GetGremienOptionsType(), ".html", time.Now(), uri, &url.Values{}, true, redownload)
 
 	targetStore := files.NewFile(sl.app, srcWeb)
 

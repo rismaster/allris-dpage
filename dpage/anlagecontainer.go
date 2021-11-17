@@ -177,7 +177,7 @@ func (a *AnlageContainer) extractTops(dom *goquery.Document) (tops []*AnlageCont
 					created := a.webRessource.GetCreated()
 					uri, err := url.Parse(a.app.Config.GetTargetToParse() + fmt.Sprintf("to020.asp?TOLFDNR=%d", tolfdnr))
 					if err == nil {
-						doc := downloader.NewRisRessource(a.app.Config.GetTopFolder(), name, ending, created, uri, &url.Values{}, a.webRessource.Redownload)
+						doc := downloader.NewRisRessource(a.app.Config.GetTopFolder(), name, ending, created, uri, &url.Values{}, a.webRessource.RedownloadChildren, a.webRessource.RedownloadChildren)
 						tops = append(tops, NewTop(a.app, doc))
 					}
 				}
@@ -221,7 +221,7 @@ func (a *AnlageContainer) extractAnlagen(dom *goquery.Selection) (docs []downloa
 				created := a.webRessource.GetCreated()
 				uri, err := url.Parse(a.app.Config.GetTargetToParse() + href)
 				if err == nil {
-					doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &url.Values{}, a.webRessource.Redownload)
+					doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &url.Values{}, a.webRessource.RedownloadChildren, a.webRessource.RedownloadChildren)
 					docs = append(docs, *doc)
 				}
 			}
@@ -250,7 +250,7 @@ func (a *AnlageContainer) extractBasisAnlagen(dom *goquery.Selection) (docs []do
 		uri, err := url.Parse(a.app.Config.GetTargetToParse() + a.app.Config.GetUrlAnlagedoc())
 
 		if err == nil {
-			doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &formData, a.webRessource.Redownload)
+			doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &formData, a.webRessource.RedownloadChildren, a.webRessource.RedownloadChildren)
 			docs = append(docs, *doc)
 		}
 

@@ -26,12 +26,12 @@ func NewVorlagenliste(app *application.AppContext) Vorlagenliste {
 }
 
 func (vl *Vorlagenliste) SynchronizeSince(minTime time.Time, redownload bool) error {
-	vorlagen, err := vl.downloadFromMin(minTime)
+	vorlagen, err := vl.downloadFromMin(minTime, redownload)
 	if err != nil {
 		return errors.Wrap(err, "error downloading vorlagen")
 	}
 
-	err = PublishRisDownload(vl.app, vorlagen, redownload)
+	err = PublishRisDownload(vl.app, vorlagen)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (vl *Vorlagenliste) SynchronizeSince(minTime time.Time, redownload bool) er
 	return nil
 }
 
-func (vl *Vorlagenliste) downloadFromMin(minTime time.Time) (results []downloader.RisRessource, err error) {
+func (vl *Vorlagenliste) downloadFromMin(minTime time.Time, redownload bool) (results []downloader.RisRessource, err error) {
 
 	var url = vl.app.Config.GetUrlVorlagenliste()
 	for i := 0; i < 1000; i++ {
@@ -59,7 +59,7 @@ func (vl *Vorlagenliste) downloadFromMin(minTime time.Time) (results []downloade
 			url = vl.app.Config.GetUrlVorlagenliste() + "?shownext=true"
 		}
 
-		limitTimeReached, vorlagen, err := vl.fetch(url, i, minTime, true)
+		limitTimeReached, vorlagen, err := vl.fetch(url, i, minTime, redownload)
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +88,7 @@ func (vl *Vorlagenliste) fetch(ressourceUrl string, page int, risCreatedSince ti
 	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", vl.app.Config.GetVorlagenListeType(), page), ".html", time.Now(), uri, &url.Values{}, redownload)
 	targetStore := files.NewFile(vl.app, srcWeb)
 
-	err = targetStore.Fetch(files.HttpGet, srcWeb, "text/html", true)
+	err = targetStore.Fetch(files.HttpGet, srcWeb, "text/html")
 	if err != nil {
 		return false, nil, errors.Wrap(err, fmt.Sprintf("error downloading Vorlagenliste from %s", ressourceUrl))
 	}

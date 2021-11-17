@@ -65,9 +65,9 @@ func (a *AnlageContainer) GetUrl() string {
 	return a.webRessource.GetUrl()
 }
 
-func (a *AnlageContainer) Download(redownload bool) error {
+func (a *AnlageContainer) Download() error {
 
-	dom, err := a.downloadAndSave(redownload)
+	dom, err := a.downloadAndSave()
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error downloading: %s %+v", a.GetPath()))
 	}
@@ -78,8 +78,8 @@ func (a *AnlageContainer) Download(redownload bool) error {
 	var risToDownload []downloader.RisRessource
 
 	dom.Find(selector).Each(func(index int, dom *goquery.Selection) {
-		risAnlagen := a.extractAnlagen(dom, redownload)
-		risAnlageDocs := a.extractBasisAnlagen(dom, redownload)
+		risAnlagen := a.extractAnlagen(dom)
+		risAnlageDocs := a.extractBasisAnlagen(dom)
 		for _, anlageRis := range risAnlagen {
 			anlage := NewAnlage(a.app, &anlageRis)
 			existingAnlagen[anlage.GetPath()] = true
@@ -97,7 +97,7 @@ func (a *AnlageContainer) Download(redownload bool) error {
 	var tops []*AnlageContainer
 	existingTops := make(map[string]bool)
 	if a.GetFolder() == a.app.Config.GetSitzungenFolder() {
-		tops = a.extractTops(dom, redownload)
+		tops = a.extractTops(dom)
 		for _, top := range tops {
 			existingTops[top.GetPath()] = true
 			risToDownload = append(risToDownload, *top.webRessource)
@@ -118,12 +118,12 @@ func (a *AnlageContainer) Download(redownload bool) error {
 		}
 	}
 
-	return PublishRisDownload(a.app, risToDownload, redownload)
+	return PublishRisDownload(a.app, risToDownload)
 }
 
-func (a *AnlageContainer) downloadAndSave(redownload bool) (*goquery.Document, error) {
+func (a *AnlageContainer) downloadAndSave() (*goquery.Document, error) {
 
-	err := a.file.Fetch(files.HttpGet, a.webRessource, "text/html", redownload)
+	err := a.file.Fetch(files.HttpGet, a.webRessource, "text/html")
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("error downloading file from %s, Error: %+v", a.GetUrl(), err))
 	}
@@ -151,7 +151,7 @@ func (a *AnlageContainer) downloadAndSave(redownload bool) (*goquery.Document, e
 	return doc, nil
 }
 
-func (a *AnlageContainer) extractTops(dom *goquery.Document, redownload bool) (tops []*AnlageContainer) {
+func (a *AnlageContainer) extractTops(dom *goquery.Document) (tops []*AnlageContainer) {
 
 	if a.GetFolder() != a.app.Config.GetSitzungenFolder() {
 		return tops
@@ -177,7 +177,7 @@ func (a *AnlageContainer) extractTops(dom *goquery.Document, redownload bool) (t
 					created := a.webRessource.GetCreated()
 					uri, err := url.Parse(a.app.Config.GetTargetToParse() + fmt.Sprintf("to020.asp?TOLFDNR=%d", tolfdnr))
 					if err == nil {
-						doc := downloader.NewRisRessource(a.app.Config.GetTopFolder(), name, ending, created, uri, &url.Values{}, redownload)
+						doc := downloader.NewRisRessource(a.app.Config.GetTopFolder(), name, ending, created, uri, &url.Values{}, a.webRessource.Redownload)
 						tops = append(tops, NewTop(a.app, doc))
 					}
 				}
@@ -188,7 +188,7 @@ func (a *AnlageContainer) extractTops(dom *goquery.Document, redownload bool) (t
 	return tops
 }
 
-func (a *AnlageContainer) extractAnlagen(dom *goquery.Selection, redownload bool) (docs []downloader.RisRessource) {
+func (a *AnlageContainer) extractAnlagen(dom *goquery.Selection) (docs []downloader.RisRessource) {
 
 	theAnlagenTables := dom.Find("table.tk1")
 	if theAnlagenTables.Size() <= 1 {
@@ -221,7 +221,7 @@ func (a *AnlageContainer) extractAnlagen(dom *goquery.Selection, redownload bool
 				created := a.webRessource.GetCreated()
 				uri, err := url.Parse(a.app.Config.GetTargetToParse() + href)
 				if err == nil {
-					doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &url.Values{}, redownload)
+					doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &url.Values{}, a.webRessource.Redownload)
 					docs = append(docs, *doc)
 				}
 			}
@@ -230,7 +230,7 @@ func (a *AnlageContainer) extractAnlagen(dom *goquery.Selection, redownload bool
 	return docs
 }
 
-func (a *AnlageContainer) extractBasisAnlagen(dom *goquery.Selection, redownload bool) (docs []downloader.RisRessource) {
+func (a *AnlageContainer) extractBasisAnlagen(dom *goquery.Selection) (docs []downloader.RisRessource) {
 
 	theTopTable := dom.Find(".me1 > table.tk1").First()
 	selector := "form[action=\"" + a.app.Config.GetUrlAnlagedoc() + "\"]"
@@ -250,7 +250,7 @@ func (a *AnlageContainer) extractBasisAnlagen(dom *goquery.Selection, redownload
 		uri, err := url.Parse(a.app.Config.GetTargetToParse() + a.app.Config.GetUrlAnlagedoc())
 
 		if err == nil {
-			doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &formData, redownload)
+			doc := downloader.NewRisRessource(a.app.Config.GetAnlagenFolder(), name, ending, created, uri, &formData, a.webRessource.Redownload)
 			docs = append(docs, *doc)
 		}
 

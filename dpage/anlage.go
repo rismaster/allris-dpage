@@ -32,8 +32,8 @@ func (a *Anlage) GetUrl() string {
 	return a.webRessource.GetUrl()
 }
 
-func (a *Anlage) Download(redownload bool) error {
-	err := a.file.Fetch(files.HttpGet, a.webRessource, "*", redownload)
+func (a *Anlage) Download() error {
+	err := a.file.Fetch(files.HttpGet, a.webRessource, "*")
 	if err != nil {
 		return errors.Wrap(err,
 			fmt.Sprintf("error downloading Vorlagenliste from %s, Error: %v", a.webRessource.GetUrl(), err))

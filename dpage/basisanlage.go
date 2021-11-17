@@ -32,9 +32,9 @@ func (d *AnlageDocument) GetUrl() string {
 	return d.webRessource.GetUrl()
 }
 
-func (d *AnlageDocument) Download(redownload bool) error {
+func (d *AnlageDocument) Download() error {
 
-	err := d.file.Fetch(files.HttpPost, d.webRessource, "application/pdf", redownload)
+	err := d.file.Fetch(files.HttpPost, d.webRessource, "application/pdf")
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error downloading Vorlagenliste from %s, Error: %+v", d.webRessource.GetUrl(), err))
 	}

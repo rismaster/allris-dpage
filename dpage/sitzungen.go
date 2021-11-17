@@ -44,7 +44,7 @@ func (sl *Sitzungsliste) SynchronizeSince(minTime time.Time, redownload bool) er
 		allSitzungenFromRis[sitzung.GetPath()] = true
 	}
 
-	err = PublishRisDownload(sl.app, sitzungenRis, redownload)
+	err = PublishRisDownload(sl.app, sitzungenRis)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (sl *Sitzungsliste) DownloadLastNPerGremium(countPerGremium int, redownload
 		return errors.Wrap(err, "error downloading vorlagen %+v")
 	}
 
-	err = PublishRisDownload(sl.app, sitzungenRis, redownload)
+	err = PublishRisDownload(sl.app, sitzungenRis)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (sl *Sitzungsliste) fetchLongSitzungsListe(minTime time.Time, redownload bo
 	srcWeb := downloader.NewRisRessource("", sl.app.Config.GetAlleSitzungenType(), ".html", time.Now(), uri, &formData, redownload)
 	targetStore := files.NewFile(sl.app, srcWeb)
 
-	err = targetStore.Fetch(files.HttpPost, srcWeb, "text/html", true)
+	err = targetStore.Fetch(files.HttpPost, srcWeb, "text/html")
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("error downloading allesitzungen from %s", sl.app.Config.GetUrlSitzungsLangeliste()))
 	}
@@ -164,7 +164,7 @@ func (sl *Sitzungsliste) fetchSitzungsListe(gremium *Gremium, redownload bool) (
 	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", sl.app.Config.GetGremienListeType(), gremium.option), ".html", time.Now(), uri, &formData, redownload)
 	targetStore := files.NewFile(sl.app, srcWeb)
 
-	err = targetStore.Fetch(files.HttpPost, srcWeb, "text/html", true)
+	err = targetStore.Fetch(files.HttpPost, srcWeb, "text/html")
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error downloading Sitzungsliste from %s", sl.app.Config.GetUrlSitzungsliste()))
 	}
@@ -264,7 +264,7 @@ func (sl *Sitzungsliste) fetchGremiumOptions(redownload bool) (gremien []*Gremiu
 
 	targetStore := files.NewFile(sl.app, srcWeb)
 
-	err = targetStore.Fetch(files.HttpGet, srcWeb, "text/html", true)
+	err = targetStore.Fetch(files.HttpGet, srcWeb, "text/html")
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("error downloading Gremienliste from %s", sl.app.Config.GetUrlSitzungsliste()))
 	}

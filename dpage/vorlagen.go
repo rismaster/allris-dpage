@@ -85,7 +85,7 @@ func (vl *Vorlagenliste) fetch(ressourceUrl string, page int, risCreatedSince ti
 		return false, nil, errors.Wrap(err, "cannot parse url")
 	}
 
-	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", vl.app.Config.GetVorlagenListeType(), page), ".html", time.Now(), uri, &url.Values{})
+	srcWeb := downloader.NewRisRessource("", fmt.Sprintf("%s-%d", vl.app.Config.GetVorlagenListeType(), page), ".html", time.Now(), uri, &url.Values{}, redownload)
 	targetStore := files.NewFile(vl.app, srcWeb)
 
 	err = targetStore.Fetch(files.HttpGet, srcWeb, "text/html", true)
@@ -98,7 +98,7 @@ func (vl *Vorlagenliste) fetch(ressourceUrl string, page int, risCreatedSince ti
 		return false, nil, errors.Wrap(err, fmt.Sprintf("error create dom from %s", targetStore.GetName()))
 	}
 
-	limitTimeReached, vorlagen, err = vl.parseChildren(doc, risCreatedSince)
+	limitTimeReached, vorlagen, err = vl.parseChildren(doc, risCreatedSince, redownload)
 	if err != nil {
 		return false, nil, errors.Wrap(err, fmt.Sprintf("error parsing dom from %s", targetStore.GetName()))
 	}
@@ -112,13 +112,13 @@ func (vl *Vorlagenliste) fetch(ressourceUrl string, page int, risCreatedSince ti
 	return limitTimeReached, vorlagen, nil
 }
 
-func (vl *Vorlagenliste) parseChildren(doc *goquery.Document, risCreatedSince time.Time) (limitTimeReached bool, vorlagen []downloader.RisRessource, err error) {
+func (vl *Vorlagenliste) parseChildren(doc *goquery.Document, risCreatedSince time.Time, redownload bool) (limitTimeReached bool, vorlagen []downloader.RisRessource, err error) {
 
 	selector := "tr.zl11,tr.zl12"
 
 	limitTimeReached = false
 	doc.Find(selector).Each(func(index int, dom *goquery.Selection) {
-		vorlage, err := vl.parseElement(dom)
+		vorlage, err := vl.parseElement(dom, redownload)
 		if err == nil {
 			if risCreatedSince.Before(vorlage.GetCreated()) {
 				vorlagen = append(vorlagen, *vorlage)
@@ -131,7 +131,7 @@ func (vl *Vorlagenliste) parseChildren(doc *goquery.Document, risCreatedSince ti
 	return limitTimeReached, vorlagen, nil
 }
 
-func (vl *Vorlagenliste) parseElement(e *goquery.Selection) (vorlage *downloader.RisRessource, err error) {
+func (vl *Vorlagenliste) parseElement(e *goquery.Selection, redownload bool) (vorlage *downloader.RisRessource, err error) {
 
 	dom := e.Children()
 	if dom.Size() < 4 {
@@ -156,5 +156,5 @@ func (vl *Vorlagenliste) parseElement(e *goquery.Selection) (vorlage *downloader
 		return nil, errors.Wrap(err, "cannot parse url")
 	}
 
-	return downloader.NewRisRessource(vl.app.Config.GetVorlagenFolder(), fmt.Sprintf("%s-%d", vl.app.Config.GetVorlageType(), volfdnr), ".html", risCreatedSince, uri, &url.Values{}), nil
+	return downloader.NewRisRessource(vl.app.Config.GetVorlagenFolder(), fmt.Sprintf("%s-%d", vl.app.Config.GetVorlageType(), volfdnr), ".html", risCreatedSince, uri, &url.Values{}, redownload), nil
 }

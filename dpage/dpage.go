@@ -1,9 +1,7 @@
 package dpage
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
-	"encoding/json"
 	allris_common "github.com/rismaster/allris-common"
 	"github.com/rismaster/allris-common/application"
 	"github.com/rismaster/allris-common/common/slog"
@@ -46,24 +44,8 @@ func Download(ctx context.Context, ris downloader.RisRessource, conf allris_comm
 
 func PublishRisDownload(app *application.AppContext, risArr []downloader.RisRessource) error {
 
-	if app.Config.GetDebug() {
-
-		for _, ris := range risArr {
-			Download(app.Ctx(), ris, app.Config)
-		}
-
-	} else {
-
-		t := app.Publisher().Topic(app.Config.GetDownloadTopic())
-		for _, ris := range risArr {
-			b, err := json.Marshal(ris)
-			if err != nil {
-				return err
-			}
-			t.Publish(app.Ctx(), &pubsub.Message{
-				Data: b,
-			})
-		}
+	for _, ris := range risArr {
+		Download(app.Ctx(), ris, app.Config)
 	}
 
 	return nil
